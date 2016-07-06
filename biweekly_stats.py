@@ -9,13 +9,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 STATS_DIR = '/opt/maui/stats'
-FS_TARGETS = {'cbcb': 20.00,
-              'icms': 20.00,
-              'hpc': '-----',
-              'hey': 14.00,
-              'roder_voelz': 14.00,
-              'dunbrack': 18.00,
-              'schafmeister': 14.00}
+FS_TARGETS = {'group1': 50.00,
+              'group2': 50.00}
 
 def gather_files(start_file, end_file):
     start_mtime = os.stat(start_file).st_mtime
@@ -142,14 +137,12 @@ def send_mail(start, end, group_stats, user_stats):
            ("Proc-Hours %", "Percentage of all CPU time utilized"),
            ("QTime", "Average QTime in hours"))
 
-    title = "\nCB2RR biweekly usage summary for %s - %s"%(start, end)
+    title = "\n<CLUSTER NAME HERE> biweekly usage summary for %s - %s"%(start, end)
 
     body = title
     body += "\n\nGroup Usage:\n" + '\n'.join(group_stats)
     body += "\n\nUser Usage:\n" + '\n'.join(user_stats)
     body += "\n\nKey:\n" + '\n'.join(['{0:<12} - {1}'.format(*k) for k in key])
-    print body
-    sys.exit()
 
     html = '<html><head></head><body>'
     html += '<font face="Courier New, Courier, monospace">'
@@ -158,18 +151,16 @@ def send_mail(start, end, group_stats, user_stats):
     html = html.replace("Group&nbsp;Usage:", "<b>Group&nbsp;Usage:</b>")
     html = html.replace("User&nbsp;Usage:", "<b>User&nbsp;Usage:</b>")
 
-    fromaddr = 'acct@cb2rr.cst.temple.edu'
-    toaddr = 'tuf31071@temple.edu'
-    subject = 'Biweekly Usage Statistics for CB2RR'
+    # TODO: add 'from' address
+    fromaddr = 'acct@your.cluster.com'
+    subject = 'Biweekly Usage Statistics for <CLUSTER NAME HERE>'
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = fromaddr
 
-    recipients = ['tuf31071@temple.edu', 'tuf29141@temple.edu',
-                  'ronlevy@temple.edu']
-    # TODO: COMMENT FOLLOWING LINE TO SEND TO ALL RECIPIENTS
-    recipients = ['tuf31071@temple.edu']
+    # TODO: add receipients
+    recipients = ['you@your.domain.com']
     msg['To'] = ", ".join(recipients)
     msg.attach(MIMEText(body, 'plain'))
     msg.attach(MIMEText(html, 'html'))
