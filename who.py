@@ -14,8 +14,8 @@ def main():
         match = fmt.search(line)
         if not match:
             continue
-        user, fullname, _, login = match.groups()
-        users[user] = [fullname.strip(), login]
+        user, fullname, pts, login = match.groups()
+        users[user] = [fullname.strip(), login, pts]
 
     for user in users:
         res = check_output(['groups', user])
@@ -23,12 +23,12 @@ def main():
         group = left.split(' ')[0]
         users[user].insert(0, group)
 
-    fmt = '{0:10} {1[0]:<14} {1[1]:<30} {1[2]}'# {1[4]}'
+    fmt = '{0:10} {1[0]:<14} {1[1]:<30} {1[2]:<15} {1[3]}'
 
     print
     print "Currently logged in users"
     print
-    print fmt.format('user', ['group', 'fullname', 'logintime'])
+    print fmt.format('user', ['group', 'fullname', 'logintime', 'tty'])
     for user, vals in sorted(users.iteritems(), key=lambda t: t[1][0]):
         print fmt.format(user, vals)
     print
