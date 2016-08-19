@@ -192,7 +192,7 @@ def main():
         stylei = 0
 
     totals = {'gpu':0, 'normal':0}
-    for job in job_list:
+    for job in (job_list if not args.reverse else reversed(job_list)):
         totals[job['queue']] += int(job['resource_list.nodect']) \
                 if job['job_state'] == 'R' else 0
 
@@ -253,6 +253,9 @@ def parse_arguments():
     parser.add_argument('-t', '--trunc', action='store_true',
                         help="Jobnames are shown as first & last 5 characters "
                              "by default. This will show first 13 characters")
+    parser.add_argument('-r', '--reverse', action='store_true',
+                        help=("Reverses the displayed output.  Works with "
+                              "other flags"))
     parser.add_argument('-p', '--priority', nargs='?',
                         const='idle', choices=['idle', 'all'],
                         help="Show job priorities. 'idle' (default) queuries `showq` "
