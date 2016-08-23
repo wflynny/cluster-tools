@@ -2,7 +2,7 @@
 """
 Customizable qstat script because the default qstat sucks
 """
-import re, sys
+import re, os, sys
 import pwd, grp
 import getpass
 from xml.etree import ElementTree
@@ -176,7 +176,6 @@ def main():
     if args.fmt:
         default_args = args.fmt
 
-    print
     fmt = ' '.join([allowed_args[k][0] for k in default_args])
     header = fmt.format(*[allowed_args[k][1] for k in default_args])
     if args.colorize:
@@ -276,6 +275,8 @@ def parse_arguments():
     parser.add_argument('-f', '--fmt', nargs='+', metavar='',
                         help="Custom formatting. Give space separated list of "
                              "options: " + ', '.join(sorted(allowed_args.keys())))
+    parser.add_argument('--clear', action='store_true',
+                        help="Clear previous terminal output before printing")
 
     args = parser.parse_args()
 
@@ -285,7 +286,14 @@ def parse_arguments():
                 raise Exception("Invalid option keyword: %s", item)
 
     if args.priority == 'all':
-        print "\n\tQuerying for job priorities. Will take a minute...\n"
+        print "\n\tQuerying for job priorities. Will take a minute...\r",
+        sys.stdout.flush()
+    elif args.clear:
+        print 'ran'
+        res = check_output(['cls' if os.name == 'nt' else 'clear'])
+        print res
+    else:
+        print
 
     return args
 
