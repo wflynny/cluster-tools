@@ -23,7 +23,7 @@ displayed by qstat.  Examples of better information:
 
 Envisioned as a login script to show you who is using the cluster at login.
 Useful for seeing who is on in case you want to abuse the head node or want
-to bug anyone with tty `write`s.
+to bug anyone with tty `write`s (using `message.py`.
 
 ### biweekly_stats.py
 
