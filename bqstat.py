@@ -84,8 +84,8 @@ def main():
                    "conda-pyopencl\n")
             Fore, Back, Style = Empty(), Empty(), Empty()
 
+    # run qstat -f with xml output and parse
     qstat_res = check_output(['qstat', '-f', '-x'])
-    #lines = qstat_res.split('\n')[:-1]
     root = ElementTree.fromstring(qstat_res)
 
     job_list = []
@@ -99,6 +99,7 @@ def main():
             elif tag == 'job_id':
                 job['id'] = text.split('.')[0]
 
+            # get full details of job's owner
             elif tag == 'job_owner':
                 text = text.split('@')[0]
                 userinfo = pwd.getpwnam(text)
@@ -112,6 +113,7 @@ def main():
                     job['job_owner_full'] = fn
                 job['job_owner_group'] = grp.getgrgid(userinfo.pw_gid).gr_name
 
+            # parse requested resources
             elif tag == 'exec_host':
                 cpus = text.split('+')
                 cpus = [cpu.split('/')[0] for cpu in cpus]
@@ -119,6 +121,7 @@ def main():
                 job['nodenames'] = ', '.join(set(cpus))
                 job['cpuct'] = str(len(cpus))
 
+            # get priority if it exists (usually only for queued or held jobs)
             elif args.priority == 'all' and 'priority' in tag:
                 check_res = check_output(['checkjob', job['id']])
                 match = re.search(r'StartPriority:\s+(-?\d+)', check_res)
@@ -144,8 +147,6 @@ def main():
         job_list.append(job)
 
 
-    #if args.sort:
-    #    keys = args.sort.replace(' ', '').split(',')
     if args.priority == 'idle':
         prio_res = check_output(['showq', '-i']).split('\n')
         prio_res = filter(None, map(str.strip, prio_res))
@@ -159,15 +160,26 @@ def main():
             else:
                 job['priority'] = '----'
 
+    # how to sort jobs. if full priority (meaning running jobs too) is
+    # requested, sort by priority.  otherwise, unless different sorting is
+    # requested, sort by state, owner, then id.
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    default_sort_args = ['state', 'queue', 'group', 'fname', 'id']
+    sort_map = {'group': 'job_owner_group', 'uname': 'job_owner',
+                'fname': 'job_owner_full', 'id': 'id', 'state': 'job_state',
+                'queue': 'queue'}
     if args.priority:
         key = lambda d: (d['job_state'],
             -1*(int(d['priority']) if not d['priority'].startswith('--') else 50000),
             d['job_owner'], int(d['id']))
     else:
-        key = lambda d: (d['job_state'], d['job_owner'], int(d['id']))
-    job_list = sorted(job_list, key=key)
-    #job_list = sorted(job_list, key=lambda d: (d['job_owner'], int(d['id'])))
+        sort_args = args.sort + [el for el in default_sort_args if el not in args.sort]
+        key = lambda d: [convert(d[sort_map[el]]) for el in sort_args]
 
+    job_list = sorted(job_list, key=key)
+
+    # specify what args a printed.  this only changes if supplied a --fmt
+    # command line option
     default_args = ['id', 'job_owner_full', 'job_owner_group', 'job_name',
             'resource_list.nodect', 'queue', 'resources_used.walltime',
             'resource_list.walltime', 'job_state']
@@ -176,6 +188,7 @@ def main():
     if args.fmt:
         default_args = args.fmt
 
+    # print and stylize the header
     fmt = ' '.join([allowed_args[k][0] for k in default_args])
     header = fmt.format(*[allowed_args[k][1] for k in default_args])
     if args.colorize:
@@ -186,17 +199,29 @@ def main():
     dashes = dashfmt.format(*['']*len(default_args))
     print dashes
 
+    # handle squashing
+    if args.squash:
+        user_squash = []
+        group_squash = []
+        # TODO: do this
+
+
     if args.colorize:
         styles = [Style.DIM, Style.NORMAL]
         stylei = 0
 
     totals = {'gpu':0, 'normal':0}
+
     for job in (job_list if not args.reverse else reversed(job_list)):
         totals[job['queue']] += int(job['resource_list.nodect']) \
                 if job['job_state'] == 'R' else 0
 
+        if args.squash:
+            pass
+
         if args.user:
-            if job['job_owner'] != args.user: continue
+            if job['job_owner'] != args.user and \
+               (args.user.lower() not in job['job_owner_full'].lower()): continue
         elif args.me:
             if job['job_owner'] != getpass.getuser(): continue
 
@@ -272,15 +297,24 @@ def parse_arguments():
     #parser.add_argument('-s', '--sort', type=str, metavar='',
     #                    help="Keys by which to sort results. Can supply more "
     #                         "than one using a comma (,) separated list")
+    parser.add_argument('-s', '--sort', nargs='+', default=[],
+                        choices=['group', 'uname', 'fname', 'id', 'queue'],
+                        help=("Additional sorting options.  Can be combined in "
+                              "a space separated list"))
+    parser.add_argument('-S', '--squash', choices=['user', 'group'],
+                        help="Show user/group aggregated output")
+    parser.add_argument('--clear', action='store_true',
+                        help="Clear previous terminal output before printing")
     parser.add_argument('-f', '--fmt', nargs='+', metavar='',
                         help="Custom formatting. Give space separated list of "
                              "options: " + ', '.join(sorted(allowed_args.keys())))
-    parser.add_argument('--clear', action='store_true',
-                        help="Clear previous terminal output before printing")
+
 
     args = parser.parse_args()
 
     if args.fmt:
+        if args.squash:
+            raise Exception("Can't squash with custom formatting")
         for item in args.fmt:
             if item not in allowed_args.keys():
                 raise Exception("Invalid option keyword: %s", item)
