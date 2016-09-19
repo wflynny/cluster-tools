@@ -294,7 +294,7 @@ def parse_arguments():
     parent.add_argument('--maui-cfg', default='/opt/maui/maui.cfg',
                         help=("Path to Maui config files.  If blank or can't "
                               "find, will use `showconfig` (slower)"))
-    args_so_far = parent.parse_known_args()
+    args_so_far, _ = parent.parse_known_args()
     queues, limits = load_qos(args_so_far)
 
     parser = argparse.ArgumentParser(description=__doc__, parents=[parent])
