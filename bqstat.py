@@ -210,7 +210,7 @@ def main():
         styles = [Style.DIM, Style.NORMAL]
         stylei = 0
 
-    totals = {'gpu':0, 'normal':0}
+    totals = dict((queue, 0) for queue in args.queues)#'gpu':0, 'normal':0}
 
     for job in (job_list if not args.reverse else reversed(job_list)):
         totals[job['queue']] += int(job['resource_list.nodect']) \
@@ -218,6 +218,9 @@ def main():
 
         if args.squash:
             pass
+
+        if args.group:
+            if job['job_owner_group'] != args.group: continue
 
         if args.user:
             if job['job_owner'] != args.user and \
@@ -254,16 +257,49 @@ def main():
     print header
     print
 
-    total = "\tNormal Q:   {normal}/60\t||\tGPU Q:   {gpu}/10".format(**totals)
+    total = ""
+    for queue, count in sorted(totals.iteritems(), key=lambda t: t[1]):
+        total += "{queue:>10} Q:   {count}/{limit}\n".format(queue=queue.upper(),
+                count=count, limit=args.limits[queue])
+    #total = "\tNormal Q:   {normal}/60\t||\tGPU Q:   {gpu}/10".format(**totals)
     if args.colorize:
         print Style.BRIGHT + Fore.WHITE + total + Style.RESET_ALL
     else:
         print total
-    print
 
+def load_qos(args):
+    content = ''
+    try:
+        with open(args.maui_cfg, 'r') as fin:
+            content += fin.read()
+    except:
+        #that failed, try check_output(showconfig)
+        try:
+            content += check_output(['showconfig'])
+        except:
+            raise Exception("Can't find config file to read queues")
+    queues = re.findall(r'RESERVATIONQOSLIST\[\d\]\s+(\w+)qos', content)
+
+    limits = {}
+    try:
+        content = check_output(['pbsload'])
+        for queue in queues:
+            limits[queue] = content.count(queue)
+    except:
+        pass
+    return queues, limits
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument('--maui-cfg', default='/opt/maui/maui.cfg',
+                        help=("Path to Maui config files.  If blank or can't "
+                              "find, will use `showconfig` (slower)"))
+    args_so_far = parent.parse_known_args()
+    queues, limits = load_qos(args_so_far)
+
+    parser = argparse.ArgumentParser(description=__doc__, parents=[parent])
+    parser.add_argument('-g', '--group', type=str,
+                        help="Only show results for [group]")
     parser.add_argument('-u', '--user', type=str,
                         help="Only show results for [user]")
     parser.add_argument('-U', '--me', action='store_true',
@@ -272,7 +308,7 @@ def parse_arguments():
                         help="Hide non-running jobs")
     parser.add_argument('-Q', '--queued', action='store_true',
                         help="Hide running jobs")
-    parser.add_argument('-q', '--queue', type=str, choices=['gpu', 'normal'],
+    parser.add_argument('-q', '--queue', type=str, choices=queues,
                         help="Only show results for [queue]")
     parser.add_argument('-t', '--trunc', action='store_true',
                         help="Jobnames are shown as first & last 5 characters "
@@ -309,8 +345,9 @@ def parse_arguments():
                         help="Custom formatting. Give space separated list of "
                              "options: " + ', '.join(sorted(allowed_args.keys())))
 
-
     args = parser.parse_args()
+    args.queues = queues
+    args.limits = limits
 
     if args.fmt:
         if args.squash:
