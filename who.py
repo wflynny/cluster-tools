@@ -3,10 +3,11 @@ import os
 import sys
 import re
 import datetime
+import argparse
 
 from subprocess import check_output
 
-def main():
+def main(args):
     res = check_output(['finger'])
     users = {}
     lines = res.strip().split('\n')
@@ -34,11 +35,15 @@ def main():
     fmt = '{0:10} {1[0]:<14} {1[1]:<30} {1[4]:<2}  {1[2]:<15} {1[3]}'
 
     print
-    print "Currently logged in users"
+    print "Currently logged in users" + ("" if not args.group else " in group: "+args.group)
     print
     print fmt.format('user', ['group','fullname','lastlogin','tty','N'])
     for user, vals in sorted(users.iteritems(), key=lambda t: t[1][0]):
+        if args.group and vals[0] != args.group: continue
         print fmt.format(user, vals)
     print
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--group',
+                        help="Only show users from <group>")
+    main(parser.parse_args())
