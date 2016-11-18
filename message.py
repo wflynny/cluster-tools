@@ -11,7 +11,7 @@ def quit(msg):
     print msg
     sys.exit(1)
 
-def resolve_user(user):
+def resolve_user(user, debug=False):
     tuid = None
     if user.startswith('tu'):
         tuid = user
@@ -54,21 +54,23 @@ def get_ttys(user, given_tty=None):
     return ttys
 
 def message(args):
-    tuid = resolve_user(args.user)
-    ttys = get_ttys(tuid, args.tty)
-    if not ttys:
-        quit("No valid ttys found for user: {}".format(tuid))
+    all_ttys = []
+    for user in args.user:
+        tuid = resolve_user(user)
+        ttys = get_ttys(tuid, args.tty)
+        if not ttys:
+            quit("No valid ttys found for user: {}".format(tuid))
 
-    if not args.all:
-        #ttys = [ttys[0]]
-        #choose most recently active
-        now = datetime.now()
-        ttys = [ttys[min([(now-t[1], i) for i, t in enumerate(ttys)])[1]][0]]
-    else:
-        ttys = [t[0] for t in ttys]
+        if not args.all:
+            #choose most recently active
+            now = datetime.now()
+            ttys = [ttys[min([(now-t[1], i) for i, t in enumerate(ttys)])[1]][0]]
+        else:
+            ttys = [t[0] for t in ttys]
+        all_ttys.extend(ttys)
 
     procs = []
-    for tty in ttys:
+    for tty in all_ttys:
         writer = Popen(['write', tuid, tty], stdin=PIPE, stdout=PIPE)
         procs.append(writer)
 
@@ -86,15 +88,15 @@ def message(args):
             proc.wait()
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('user', type=str, help="User to message")
+    parser.add_argument('user', type=str, nargs='+', help="User to message")
     parser.add_argument('-a', '--all', action='store_true',
                         help="Message user at all active termainls")
     parser.add_argument('-t', '--tty', type=str, default=None,
                         help="tty through which to write to user")
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help="extra debugging info")
 
     args = parser.parse_args()
     message(args)
