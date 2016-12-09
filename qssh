@@ -1,2 +1,2 @@
 #!/bin/bash
-eval "$( ./qssh.py $1 )"
+eval "$( $HOME/bin/cluster_tools/qssh.py $1 )"

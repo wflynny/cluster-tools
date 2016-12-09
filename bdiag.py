@@ -8,7 +8,12 @@ from subprocess import check_output
 
 E1, E2, E3, E4 = u'\u2581'*3,  u'\u2582'*3,  u'\u2583'*3,  u'\u2584'*3
 E5, E6, E7, E8 = u'\u2585'*3,  u'\u2586'*3,  u'\u2587'*3,  u'\u2588'*3
-ES = [u'   ', E1, E2, E3, E4, E5, E6, E7, E8]
+ES = [u'___', E1, E2, E3, E4, E5, E6, E7, E8]
+
+def weight_func(x):
+    if x < 0.001:
+        return u'   '
+    return ES[int(round(x/12.5))]
 
 def weight_map(weights, target=None, target_index=None):
     if isinstance(weights[0], basestring):
@@ -19,7 +24,8 @@ def weight_map(weights, target=None, target_index=None):
                   for w in weights]
         if target_index:
             colors[target_index] = Fore.WHITE
-    weights = map(lambda x: ES[int(round(x/12.5))], weights)
+    weights = map(weight_func, weights)
+    #weights = map(lambda x: ES[int(round(x/12.5))], weights)
     if target:
         weights = [''.join(tup) for tup in zip([u'']*len(weights), colors, weights,
                                 [Style.RESET_ALL]*len(weights))]
@@ -57,6 +63,8 @@ def groups(lines, weights, args):
     groups = []
     for line in lines:
         g = line[0].strip('*- ')
+        if g == 'DEFAULT': continue
+        if g == 'ACCT': break
 
         w = [c.strip('-') if not c.startswith('-') else '0.' for c in line[1:]]
         w = weight_map(w, target=w[1], target_index=1)
