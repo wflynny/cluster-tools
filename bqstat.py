@@ -86,6 +86,9 @@ def main():
 
     # run qstat -f with xml output and parse
     qstat_res = check_output(['qstat', '-f', '-x'])
+    if not qstat_res:
+        exit("Nothing currently running...\n")
+
     root = ElementTree.fromstring(qstat_res)
 
     job_list = []
