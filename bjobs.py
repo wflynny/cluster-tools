@@ -6,14 +6,13 @@ from operator import itemgetter
 from subprocess import check_output
 from colorama import Fore, Back, Style
 
-def color_func(x):
+def color_func(x, length=18, fill=' '):
     x = float(x)
-    if x < 30.:
-        return '{}{}{}'.format(Fore.RED, x, Fore.RESET)
-    if x >= 50.:
-        return '{}{}{}'.format(Fore.GREEN, x, Fore.RESET)
-    else:
-        return '{}{}{}'.format(Fore.YELLOW, x, Fore.RESET)
+    after = Fore.RESET
+    before = Fore.YELLOW if 30 < x < 50 else \
+                Fore.RED if x <= 30 else Fore.GREEN
+    item = '{}{}{}'.format(before, x, after)
+    return fill*(length - len(item)) + item
 
 def main(args):
     if args.user or args.user == '':
@@ -25,14 +24,22 @@ def main(args):
     lines = res.strip().split('\n')[4:]
 
     getter = itemgetter(0, 5, 9, 7, -1)
-    fmt = '{:>8.8}  {:>8.8}%  {:>8.8}%  {:>8.8}%  {:>8.8}%'
-    header = ('name', 'jobs', 'cpu used', 'cpu reqd', 'wt acc')
+    fmt = '{:>8.8}  {:>8.8}%  {:>8.8}%  {:>8.8}%  {:>8}%'
+    header = ['name', 'jobs', 'cpu used', 'cpu reqd', 'wt acc']
+    underline = '-'*52
 
     data = [list(getter(line.split())) for line in lines]
-    data.sort()
+    if args.user or args.user == '':
+        for row in data:
+            g = grp.getgrgid(pwd.getpwnam(row[0]).pw_gid).gr_name
+            row.insert(1, g)
+        header.insert(1, 'group')
+        fmt = '{:>8.8}  ' + fmt
+        underline += '-'*10
+    data.sort(key=lambda t: (t[1], t[0]))
 
     print fmt.format(*header)
-    print '-'*52
+    print underline
     for row in data:
         row[-1] = color_func(row[-1])
         print fmt.format(*row), Style.RESET_ALL

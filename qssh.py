@@ -8,6 +8,8 @@ from subprocess import check_call, check_output, Popen, PIPE
 
 def find_last_jobid(user):
     content = filter(None, check_output(['qstat', '-u', user]).split('\n'))
+    if not content:
+        exit("No running jobs found")
     return content[-1].split()[0].split('.')[0]
 
 def find_node(jobid):

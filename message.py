@@ -75,6 +75,10 @@ def message(args):
         procs.append(writer)
 
     try:
+        if args.infile:
+            content = args.infile.read()
+            for writer in procs:
+                writer.stdin.write(content)
         while True:
             input = raw_input("> ")
             for writer in procs:
@@ -97,6 +101,7 @@ if __name__ == "__main__":
                         help="tty through which to write to user")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="extra debugging info")
+    parser.add_argument('-i', '--infile', type=argparse.FileType('r'))
 
     args = parser.parse_args()
     message(args)
