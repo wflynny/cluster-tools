@@ -287,7 +287,7 @@ def load_qos(args):
     try:
         content = check_output(['pbsload'])
         for queue in queues:
-            limits[queue] = content.count(queue)
+            limits[queue] = content.count('queue=%s'%queue)
     except:
         pass
     return queues, limits
