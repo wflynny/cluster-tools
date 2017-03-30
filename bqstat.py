@@ -214,10 +214,12 @@ def main():
         stylei = 0
 
     totals = dict((queue, 0) for queue in args.queues)#'gpu':0, 'normal':0}
+    queued = dict((queue, 0) for queue in args.queues)
 
     for job in (job_list if not args.reverse else reversed(job_list)):
         totals[job['queue']] += int(job['resource_list.nodect']) \
                 if job['job_state'] == 'R' else 0
+        queued[job['queue']] += int(job['resource_list.nodect'])*(job['job_state'] == 'Q')
 
         if args.squash:
             pass
@@ -262,8 +264,9 @@ def main():
 
     total = ""
     for queue, count in sorted(totals.iteritems(), key=lambda t: t[1]):
-        total += "{queue:>10} Q:   {count}/{limit}\n".format(queue=queue.upper(),
-                count=count, limit=args.limits[queue])
+        total += "{queue:>10} Q:   {count:>2}/{limit}  ({queued:>2})\n".format(
+                queue=queue.upper(), count=count, limit=args.limits[queue],
+                queued=queued[queue])
     #total = "\tNormal Q:   {normal}/60\t||\tGPU Q:   {gpu}/10".format(**totals)
     if args.colorize:
         print Style.BRIGHT + Fore.WHITE + total + Style.RESET_ALL
