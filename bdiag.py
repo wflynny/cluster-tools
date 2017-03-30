@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import re
 import pwd, grp
 import argparse
+from datetime import datetime as dt
 from colorama import Fore, Back, Style
 from subprocess import check_output
 
@@ -31,9 +32,15 @@ def weight_map(weights, target=None, target_index=None):
                                 [Style.RESET_ALL]*len(weights))]
     return weights
 
+def daystrings():
+    week = 'MTWTFSS'*3
+    x = dt.today().isoweekday()
+    return map(''.join, zip(map(str, range(14)), week[x:x+14][::-1]))
+
 def users(lines, weights, args):
     print
     fmt = u'{:>8.8}|{:>8.8}|{:^3}|' + '{:^3}|'*14
+    print fmt.format('','','', *daystrings())
     print fmt.format('User', 'Group', 'FS', *weight_map(weights))
     print fmt.format('-'*12, '-'*8, *['-'*3]*15)
 
@@ -57,6 +64,7 @@ def users(lines, weights, args):
 def groups(lines, weights, args):
     print
     fmt = u'      {:>8.8}|{:<3}{:>3}|' + '{:^3}|'*14
+    print fmt.format('','','', *daystrings())
     print fmt.format('Group', 'FS', 'TGT', *weight_map(weights))
     print fmt.format(' '*3+'-'*5, *['-'*3]*16)
 
