@@ -248,7 +248,7 @@ def main():
                 if job['job_state'] == 'R':
                     line = Fore.YELLOW + Style.BRIGHT + line + Style.RESET_ALL
                 else:
-                    line = Fore.MAGENTA + line + Style.RESET_ALL
+                    line = Fore.MAGENTA + Style.NORMAL + line + Style.RESET_ALL
             elif args.running or args.queued:
                 line = styles[(stylei/5)%2] + line
                 stylei += 1
