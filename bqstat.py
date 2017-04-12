@@ -171,11 +171,14 @@ def main():
     sort_map = {'group': 'job_owner_group', 'uname': 'job_owner',
                 'fname': 'job_owner_full', 'id': 'id', 'state': 'job_state',
                 'queue': 'queue'}
+    separate_queued = False
     if args.priority:
         key = lambda d: (d['job_state'],
             -1*(int(d['priority']) if not d['priority'].startswith('--') else 50000),
             d['job_owner'], int(d['id']))
     else:
+        if not args.sort and not args.running and not args.queued:
+            separate_queued = True
         sort_args = args.sort + [el for el in default_sort_args if el not in args.sort]
         key = lambda d: [convert(d[sort_map[el]]) for el in sort_args]
 
@@ -216,6 +219,7 @@ def main():
     totals = dict((queue, 0) for queue in args.queues)#'gpu':0, 'normal':0}
     queued = dict((queue, 0) for queue in args.queues)
 
+    last_state = '-'
     for job in (job_list if not args.reverse else reversed(job_list)):
         totals[job['queue']] += int(job['resource_list.nodect']) \
                 if job['job_state'] == 'R' else 0
@@ -256,7 +260,11 @@ def main():
                 style = Style.NORMAL if job['job_state'] == 'R' else Style.DIM
                 line = style + line
 
+        if last_state in 'QR' and job['job_state'] != last_state:
+            print dashes
+
         print line
+        last_state = job['job_state']
 
     print dashes
     print header
