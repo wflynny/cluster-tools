@@ -170,7 +170,7 @@ def main():
     default_sort_args = ['state', 'queue', 'group', 'fname', 'id']
     sort_map = {'group': 'job_owner_group', 'uname': 'job_owner',
                 'fname': 'job_owner_full', 'id': 'id', 'state': 'job_state',
-                'queue': 'queue'}
+                'queue': 'queue', 'walltime': 'resource_list.walltime'}
     separate_queued = False
     if args.priority:
         key = lambda d: (d['job_state'],
@@ -348,7 +348,7 @@ def parse_arguments():
     #                    help="Keys by which to sort results. Can supply more "
     #                         "than one using a comma (,) separated list")
     parser.add_argument('-s', '--sort', nargs='+', default=[],
-                        choices=['group', 'uname', 'fname', 'id', 'queue'],
+                        choices=['group', 'uname', 'fname', 'id', 'queue', 'walltime'],
                         help=("Additional sorting options.  Can be combined in "
                               "a space separated list"))
     parser.add_argument('-S', '--squash', choices=['user', 'group'],
