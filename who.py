@@ -21,7 +21,7 @@ def main(args):
         if info:
             last_login = datetime.datetime.strptime(info[1], '%b %d %H:%M')
             new_login = datetime.datetime.strptime(login, '%b %d %H:%M')
-            if last_login < new_login:
+            if new_login < last_login:
                 login = info[1]
         nlogins = info[-1] + 1 if info else 1
         users[user] = [fullname.strip(), login, pts, nlogins]
